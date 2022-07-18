@@ -1,0 +1,70 @@
+project: default
+source:
+  repoURL: 'https://charts.bitnami.com/bitnami'
+  targetRevision: 13.1.2
+  helm:
+    parameters:
+      - name: image.repository
+        value: njuhaandrej/anakin
+      - name: image.tag
+        value: nginx
+  chart: nginx
+destination:
+  server: 'https://kubernetes.default.svc'
+  namespace: nginx
+syncPolicy:
+  automated: {}
+  syncOptions:
+    - CreateNamespace=true
+
+
+
+project: default
+source:
+  repoURL: 'https://prometheus-community.github.io/helm-charts'
+  targetRevision: 37.2.0
+  helm:
+    values: |-
+      prometheus:
+        prometheusSpec:
+          additionalScrapeConfigs:
+            - job_name: 'blackbox'
+              metrics_path: /probe
+              params:
+                module: [http_2xx]
+              static_configs:
+                - targets:
+                  - http://prometheus.io
+                  - https://prometheus.io
+                  - http://example.com:8080
+                  - http://google.com
+                  - http://127.0.0.1:41259
+              relabel_configs:
+                - source_labels: [__address__]
+                  target_label: __param_target
+                - source_labels: [__param_target]
+                  target_label: instance
+                - target_label: __address__
+                  replacement: blackbox-prometheus-blackbox-exporter.monitoring:9115
+  chart: kube-prometheus-stack
+destination:
+  server: 'https://kubernetes.default.svc'
+  namespace: monitoring
+syncPolicy:
+  automated: {}
+  syncOptions:
+    - CreateNamespace=true
+
+
+project: default
+source:
+  repoURL: 'https://prometheus-community.github.io/helm-charts'
+  targetRevision: 6.0.0
+  chart: prometheus-blackbox-exporter
+destination:
+  server: 'https://kubernetes.default.svc'
+  namespace: monitoring
+syncPolicy:
+  automated: {}
+  syncOptions:
+    - CreateNamespace=true
